@@ -120,9 +120,9 @@ DRESULT USER_read (
     DRESULT res = RES_ERROR;
     uint32_t timeout = 100000;
 
-    if(HAL_MMC_ReadBlocks_DMA(&hmmc, (uint8_t*)buff,
+    if(HAL_MMC_ReadBlocks(&hmmc, (uint8_t*)buff,
                          (uint32_t) (sector),
-                         count) == HAL_OK)
+                         count, 1000000) == HAL_OK)
     {
         while(HAL_MMC_GetCardState(&hmmc) != HAL_MMC_CARD_TRANSFER)
         {
