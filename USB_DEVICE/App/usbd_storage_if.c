@@ -31,8 +31,7 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-volatile uint8_t reading = 0;
-volatile uint8_t writing = 0;
+
 /* USER CODE END PV */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -212,17 +211,17 @@ int8_t STORAGE_IsReady_FS(uint8_t lun)
   /* USER CODE BEGIN 4 */
   UNUSED(lun);
 
-//  HAL_MMC_CardStateTypeDef state = HAL_MMC_GetCardState(&hmmc);
-//
-//  if (state == HAL_MMC_CARD_RECEIVING ||
-//      state == HAL_MMC_CARD_SENDING   ||
-//      state == HAL_MMC_CARD_PROGRAMMING) {
-//      return USBD_BUSY;
-//  }
-//  if (state == HAL_MMC_CARD_ERROR ||
-//      state == HAL_MMC_CARD_DISCONNECTED) {
-//      return USBD_FAIL;
-//  }
+  HAL_MMC_CardStateTypeDef state = HAL_MMC_GetCardState(&hmmc);
+
+  if (state == HAL_MMC_CARD_RECEIVING ||
+      state == HAL_MMC_CARD_SENDING   ||
+      state == HAL_MMC_CARD_PROGRAMMING) {
+      return USBD_BUSY;
+  }
+  if (state == HAL_MMC_CARD_ERROR ||
+      state == HAL_MMC_CARD_DISCONNECTED) {
+      return USBD_FAIL;
+  }
 
   return USBD_OK;
   /* USER CODE END 4 */
@@ -248,34 +247,13 @@ int8_t STORAGE_IsWriteProtected_FS(uint8_t lun)
 int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 6 */
-
-
-  if (HAL_DMA_GetState(hmmc.hdmatx) == HAL_DMA_STATE_BUSY) {
-    return USBD_BUSY;
-  }
-
-  __HAL_DMA_DISABLE(hmmc.hdmarx);
-  hmmc.hdmarx->Init.Direction = DMA_PERIPH_TO_MEMORY;
-  hmmc.hdmarx->Instance->CCR |= DMA_PERIPH_TO_MEMORY;
-  __HAL_DMA_ENABLE(hmmc.hdmarx);
-
-  reading = 1;
-
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 
-  if (HAL_MMC_ReadBlocks_DMA(&hmmc, buf, blk_addr, blk_len) != HAL_OK) {
+  if (HAL_MMC_ReadBlocks_IT(&hmmc, buf, blk_addr, blk_len) != HAL_OK) {
     HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-//    Error_Handler();
     return USBD_FAIL;
   }
-  uint32_t timeout = 10000000;
-  while (reading) {
-    if (timeout-- == 0) {
-      reading = 0;
-      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-      return USBD_FAIL;
-    }
-  }
+  while (HAL_MMC_GetCardState(&hmmc) != HAL_MMC_CARD_TRANSFER);
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
   return (USBD_OK);
   /* USER CODE END 6 */
@@ -284,37 +262,19 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 /**yeild interrupt
   * @brief  .
   * @param  lun: .
-  * @retval USBD_OK if all operations are OK else USBD_FAIL
+  * @retval USBD_OK if all operations a
+  writing = 1;
+  * re OK else USBD_FAIL
   */
 int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 7 */
-
-  if (HAL_DMA_GetState(hmmc.hdmatx) == HAL_DMA_STATE_BUSY) {
-    return USBD_BUSY;
-  }
-
-  __HAL_DMA_DISABLE(hmmc.hdmatx);
-  hmmc.hdmatx->Init.Direction = DMA_MEMORY_TO_PERIPH;
-  hmmc.hdmatx->Instance->CCR |= DMA_MEMORY_TO_PERIPH;
-  __HAL_DMA_ENABLE(hmmc.hdmatx);
-
-  writing = 1;
-
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-  if (HAL_MMC_WriteBlocks_DMA(&hmmc, buf, blk_addr, blk_len) != HAL_OK) {
+  if (HAL_MMC_WriteBlocks_IT(&hmmc, buf, blk_addr, blk_len) != HAL_OK) {
     HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-//    Error_Handler();
     return USBD_FAIL;
   }
-  uint32_t timeout = 10000000;
-  while (writing) {
-    if (timeout-- == 0) {
-      writing = 0;
-      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-      return USBD_FAIL;
-    }
-  }
+  while (HAL_MMC_GetCardState(&hmmc) != HAL_MMC_CARD_TRANSFER);
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
   return (USBD_OK);
   /* USER CODE END 7 */
@@ -333,16 +293,7 @@ int8_t STORAGE_GetMaxLun_FS(void)
 }
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
-void HAL_MMC_RxCpltCallback(MMC_HandleTypeDef *hmmc) {
-  UNUSED(hmmc);
 
-  reading = 0;
-}
-void HAL_MMC_TxCpltCallback(MMC_HandleTypeDef *hmmc) {
-  UNUSED(hmmc);
-
-  writing = 0;
-}
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /**

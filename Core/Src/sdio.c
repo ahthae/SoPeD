@@ -45,7 +45,7 @@ void MX_SDIO_MMC_Init(void)
   hmmc.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_DISABLE;
   hmmc.Init.BusWide = SDIO_BUS_WIDE_8B;
   hmmc.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_ENABLE;
-  hmmc.Init.ClockDiv = 1;
+  hmmc.Init.ClockDiv = 2;
   if (HAL_MMC_Init(&hmmc) != HAL_OK)
   {
     Error_Handler();
