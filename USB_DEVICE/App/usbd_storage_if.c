@@ -31,7 +31,8 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+volatile uint8_t reading = 0;
+volatile uint8_t writing = 0;
 /* USER CODE END PV */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -105,10 +106,10 @@ const int8_t STORAGE_Inquirydata_FS[] = {/* 36 */
   0x00,
   0x00,
   0x00,
-  'S', 'T', 'M', ' ', ' ', ' ', ' ', ' ', /* Manufacturer : 8 bytes */
-  'P', 'r', 'o', 'd', 'u', 'c', 't', ' ', /* Product      : 16 Bytes */
+  'A', 'h', 't', 'h', 'a', 'e', 'o', 'n', /* Manufacturer : 8 bytes */
+  'S', 'o', 'P', 'e', 'D', ' ', ' ', ' ', /* Product      : 16 Bytes */
   ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-  '0', '.', '0' ,'1'                      /* Version      : 4 Bytes */
+  '0', '.', '2' ,' '                      /* Version      : 4 Bytes */
 };
 /* USER CODE END INQUIRY_DATA_FS */
 
@@ -209,9 +210,20 @@ int8_t STORAGE_GetCapacity_FS(uint8_t lun, uint32_t *block_num, uint16_t *block_
 int8_t STORAGE_IsReady_FS(uint8_t lun)
 {
   /* USER CODE BEGIN 4 */
-//	if (!(HAL_MMC_GetCardState(&hmmc) & (HAL_MMC_CARD_TRANSFER | HAL_MMC_CARD_READY | HAL_MMC_CARD_STANDBY))) {
-//		return USBD_FAIL;
-//	}
+  UNUSED(lun);
+
+//  HAL_MMC_CardStateTypeDef state = HAL_MMC_GetCardState(&hmmc);
+//
+//  if (state == HAL_MMC_CARD_RECEIVING ||
+//      state == HAL_MMC_CARD_SENDING   ||
+//      state == HAL_MMC_CARD_PROGRAMMING) {
+//      return USBD_BUSY;
+//  }
+//  if (state == HAL_MMC_CARD_ERROR ||
+//      state == HAL_MMC_CARD_DISCONNECTED) {
+//      return USBD_FAIL;
+//  }
+
   return USBD_OK;
   /* USER CODE END 4 */
 }
@@ -236,17 +248,40 @@ int8_t STORAGE_IsWriteProtected_FS(uint8_t lun)
 int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 6 */
+
+
+  if (HAL_DMA_GetState(hmmc.hdmatx) == HAL_DMA_STATE_BUSY) {
+    return USBD_BUSY;
+  }
+
+  __HAL_DMA_DISABLE(hmmc.hdmarx);
+  hmmc.hdmarx->Init.Direction = DMA_PERIPH_TO_MEMORY;
+  hmmc.hdmarx->Instance->CCR |= DMA_PERIPH_TO_MEMORY;
+  __HAL_DMA_ENABLE(hmmc.hdmarx);
+
+  reading = 1;
+
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-  if (HAL_MMC_ReadBlocks(&hmmc, buf, blk_addr, blk_len, 10000000) != HAL_OK) {
+
+  if (HAL_MMC_ReadBlocks_DMA(&hmmc, buf, blk_addr, blk_len) != HAL_OK) {
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+//    Error_Handler();
     return USBD_FAIL;
   }
-  while(HAL_MMC_GetCardState(&hmmc) != HAL_MMC_CARD_TRANSFER);
+  uint32_t timeout = 10000000;
+  while (reading) {
+    if (timeout-- == 0) {
+      reading = 0;
+      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+      return USBD_FAIL;
+    }
+  }
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
   return (USBD_OK);
   /* USER CODE END 6 */
 }
 
-/**
+/**yeild interrupt
   * @brief  .
   * @param  lun: .
   * @retval USBD_OK if all operations are OK else USBD_FAIL
@@ -254,11 +289,32 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 7 */
-  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-  if (HAL_MMC_WriteBlocks(&hmmc, buf, blk_addr, blk_len, 10000000) != HAL_OK) {
-      return USBD_FAIL;
+
+  if (HAL_DMA_GetState(hmmc.hdmatx) == HAL_DMA_STATE_BUSY) {
+    return USBD_BUSY;
   }
-  while(HAL_MMC_GetCardState(&hmmc) != HAL_MMC_CARD_TRANSFER);
+
+  __HAL_DMA_DISABLE(hmmc.hdmatx);
+  hmmc.hdmatx->Init.Direction = DMA_MEMORY_TO_PERIPH;
+  hmmc.hdmatx->Instance->CCR |= DMA_MEMORY_TO_PERIPH;
+  __HAL_DMA_ENABLE(hmmc.hdmatx);
+
+  writing = 1;
+
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+  if (HAL_MMC_WriteBlocks_DMA(&hmmc, buf, blk_addr, blk_len) != HAL_OK) {
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+//    Error_Handler();
+    return USBD_FAIL;
+  }
+  uint32_t timeout = 10000000;
+  while (writing) {
+    if (timeout-- == 0) {
+      writing = 0;
+      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+      return USBD_FAIL;
+    }
+  }
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
   return (USBD_OK);
   /* USER CODE END 7 */
@@ -277,7 +333,16 @@ int8_t STORAGE_GetMaxLun_FS(void)
 }
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
+void HAL_MMC_RxCpltCallback(MMC_HandleTypeDef *hmmc) {
+  UNUSED(hmmc);
 
+  reading = 0;
+}
+void HAL_MMC_TxCpltCallback(MMC_HandleTypeDef *hmmc) {
+  UNUSED(hmmc);
+
+  writing = 0;
+}
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /**

@@ -90,6 +90,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
+  HAL_Delay(50);
   MX_SDIO_MMC_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
@@ -164,7 +165,7 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-//  __disable_irq();
+  __disable_irq();
   while (1)
   {
       HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);

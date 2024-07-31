@@ -45,7 +45,7 @@ void MX_SDIO_MMC_Init(void)
   hmmc.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_DISABLE;
   hmmc.Init.BusWide = SDIO_BUS_WIDE_8B;
   hmmc.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_ENABLE;
-  hmmc.Init.ClockDiv = 2;
+  hmmc.Init.ClockDiv = 1;
   if (HAL_MMC_Init(&hmmc) != HAL_OK)
   {
     Error_Handler();
@@ -110,7 +110,7 @@ void HAL_MMC_MspInit(MMC_HandleTypeDef* mmcHandle)
     hdma_sdio.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_sdio.Init.MemInc = DMA_MINC_ENABLE;
     hdma_sdio.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
-    hdma_sdio.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    hdma_sdio.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
     hdma_sdio.Init.Mode = DMA_NORMAL;
     hdma_sdio.Init.Priority = DMA_PRIORITY_HIGH;
     if (HAL_DMA_Init(&hdma_sdio) != HAL_OK)
