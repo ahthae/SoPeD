@@ -194,8 +194,8 @@ int8_t STORAGE_GetCapacity_FS(uint8_t lun, uint32_t *block_num, uint16_t *block_
   HAL_MMC_CardInfoTypeDef card_info;
   HAL_MMC_GetCardInfo(&hmmc, &card_info);
 
-  *block_num = card_info.BlockNbr-1;
-  *block_size = card_info.BlockSize;
+  *block_num = card_info.LogBlockNbr-1;
+  *block_size = card_info.LogBlockSize;
 
   return (USBD_OK);
   /* USER CODE END 3 */
@@ -236,10 +236,12 @@ int8_t STORAGE_IsWriteProtected_FS(uint8_t lun)
 int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 6 */
-  if (HAL_MMC_ReadBlocks(&hmmc, buf, blk_addr, blk_len, 100) != HAL_OK) {
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+  if (HAL_MMC_ReadBlocks(&hmmc, buf, blk_addr, blk_len, 10000000) != HAL_OK) {
     return USBD_FAIL;
   }
   while(HAL_MMC_GetCardState(&hmmc) != HAL_MMC_CARD_TRANSFER);
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
   return (USBD_OK);
   /* USER CODE END 6 */
 }
@@ -252,10 +254,12 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 7 */
-  if (HAL_MMC_WriteBlocks(&hmmc, buf, blk_addr, blk_len, 100) != HAL_OK) {
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+  if (HAL_MMC_WriteBlocks(&hmmc, buf, blk_addr, blk_len, 10000000) != HAL_OK) {
       return USBD_FAIL;
   }
   while(HAL_MMC_GetCardState(&hmmc) != HAL_MMC_CARD_TRANSFER);
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
   return (USBD_OK);
   /* USER CODE END 7 */
 }

@@ -43,7 +43,7 @@ void MX_SDIO_MMC_Init(void)
   hmmc.Init.ClockEdge = SDIO_CLOCK_EDGE_RISING;
   hmmc.Init.ClockBypass = SDIO_CLOCK_BYPASS_DISABLE;
   hmmc.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_DISABLE;
-  hmmc.Init.BusWide = SDIO_BUS_WIDE_1B;
+  hmmc.Init.BusWide = SDIO_BUS_WIDE_8B;
   hmmc.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_ENABLE;
   hmmc.Init.ClockDiv = 2;
   if (HAL_MMC_Init(&hmmc) != HAL_OK)
@@ -110,7 +110,7 @@ void HAL_MMC_MspInit(MMC_HandleTypeDef* mmcHandle)
     hdma_sdio.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_sdio.Init.MemInc = DMA_MINC_ENABLE;
     hdma_sdio.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
-    hdma_sdio.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
+    hdma_sdio.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
     hdma_sdio.Init.Mode = DMA_NORMAL;
     hdma_sdio.Init.Priority = DMA_PRIORITY_HIGH;
     if (HAL_DMA_Init(&hdma_sdio) != HAL_OK)
@@ -125,6 +125,9 @@ void HAL_MMC_MspInit(MMC_HandleTypeDef* mmcHandle)
     __HAL_LINKDMA(mmcHandle,hdmarx,hdma_sdio);
     __HAL_LINKDMA(mmcHandle,hdmatx,hdma_sdio);
 
+    /* SDIO interrupt Init */
+    HAL_NVIC_SetPriority(SDIO_IRQn, 1, 0);
+    HAL_NVIC_EnableIRQ(SDIO_IRQn);
   /* USER CODE BEGIN SDIO_MspInit 1 */
 
   /* USER CODE END SDIO_MspInit 1 */
@@ -164,6 +167,9 @@ void HAL_MMC_MspDeInit(MMC_HandleTypeDef* mmcHandle)
     /* SDIO DMA DeInit */
     HAL_DMA_DeInit(mmcHandle->hdmarx);
     HAL_DMA_DeInit(mmcHandle->hdmatx);
+
+    /* SDIO interrupt Deinit */
+    HAL_NVIC_DisableIRQ(SDIO_IRQn);
   /* USER CODE BEGIN SDIO_MspDeInit 1 */
 
   /* USER CODE END SDIO_MspDeInit 1 */

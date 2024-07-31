@@ -19,7 +19,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "dma.h"
-#include "fatfs.h"
 #include "sdio.h"
 #include "usb_device.h"
 #include "gpio.h"
@@ -91,57 +90,15 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  HAL_Delay(50);
   MX_SDIO_MMC_Init();
-//  MX_FATFS_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-
-//  HAL_MMC_CardInfoTypeDef card_info;
-//  HAL_MMC_CardCIDTypeDef card_cid;
-//  HAL_MMC_CardCSDTypeDef card_csd;
-//  HAL_MMC_GetCardInfo(&hmmc, &card_info);
-//  HAL_MMC_GetCardCID(&hmmc, &card_cid);
-//  HAL_MMC_GetCardCSD(&hmmc, &card_csd);
-//
-//  FRESULT fres;
-//  UINT bw, br;
-//  BYTE wt_buf[32] = "Hello, World!\r\n";
-//  BYTE rd_buf[32];
-//
-//  fres = f_mount(&USERFatFS, (TCHAR const*)USERPath, 0);
-//  if (fres != FR_OK) {
-//     Error_Handler();
-//  }
-//
-//  fres = f_mkfs((TCHAR const*)USERPath, 0, 0);
-//  if (fres != FR_OK) {
-//     Error_Handler();
-//  }
-//
-//  fres = f_open(&USERFile, "test.txt", FA_WRITE | FA_READ | FA_CREATE_NEW);
-//  if (fres != FR_OK) {
-//      Error_Handler();
-//  }
-//
-//  fres = f_write(&USERFile, wt_buf, strlen(wt_buf), &bw);
-//  if (fres != FR_OK) {
-//      Error_Handler();
-//  }
-//
-//  fres = f_lseek(&USERFile, 0);
-//
-//  fres = f_read(&USERFile, rd_buf, strlen(wt_buf), &br);
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//	  CDC_Transmit_FS(rd_buf, br);
-//      HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-//      HAL_Delay(500);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -168,7 +125,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL4;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -183,12 +140,12 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB;
-  PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL;
+  PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL_DIV1_5;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
