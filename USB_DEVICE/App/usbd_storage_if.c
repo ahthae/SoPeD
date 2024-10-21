@@ -235,6 +235,15 @@ int8_t STORAGE_IsReady_FS(uint8_t lun)
 int8_t STORAGE_IsWriteProtected_FS(uint8_t lun)
 {
   /* USER CODE BEGIN 5 */
+  UNUSED(lun);
+
+//  HAL_MMC_CardCSDTypeDef csd;
+//  HAL_MMC_GetCardCSD(&hmmc, &csd);
+//
+//  if (csd.PermWrProtect != 0 && csd.TempWrProtect != 0) {
+//      return USBD_FAIL;
+//  }
+
   return (USBD_OK);
   /* USER CODE END 5 */
 }
@@ -260,12 +269,10 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
   /* USER CODE END 6 */
 }
 
-/**yeild interrupt
+/**
   * @brief  .
   * @param  lun: .
-  * @retval USBD_OK if all operations a
-  writing = 1;
-  * re OK else USBD_FAIL
+  * @retval USBD_OK if all operations are OK else USBD_FAIL
   */
 int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
